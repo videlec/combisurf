@@ -2758,6 +2758,104 @@ class OrientedMap:
                 proj.append(array('i', [relabelling[a], relabelling[b]]))
         return quad, proj
 
+    def geometric_intersection(self, u, v=None, punctured_faces=False):
+        r"""
+        Return the geometric intersection between two multiwalks or the self-intersection
+        of a single one.
+
+        INPUT:
+
+        - ``u`` -- a multiwalk of closed walks, given in one of the following forms
+          (see the module documentation):
+
+          - a single walk ``w``
+          - a list of walks ``[w0, w1, ...]``
+          - a list of pairs (walk, multiplicity) ``[(w0, m0), (w1, m1), ...]``
+
+        - ``v`` -- (default ``None``) an optional multiwalk of closed walks, in one
+          of the same forms
+
+        - ``punctured_faces`` -- either a boolean (default ``False``) or a list of
+          face indices. If set to ``False`` or ``True`` then respectively no face or
+          all faces are considered as punctured. If a list of integers is provided,
+          then the faces corresponding to them are considered as punctured.
+
+        OUTPUT: integer. Either the self-intersection of ``u`` if ``v`` is not
+        provided or the geometric intersection between ``u`` and ``v``.
+
+        The self-intersection counts each crossing once, while the intersection
+        of ``u`` with itself counts it twice: for a closed curve ``c`` one has
+        `i(c, c) = 2 i(c)`.
+
+        EXAMPLES:
+
+        A sample of curves on a pair of pants::
+
+            sage: from combisurf import OrientedMap
+            sage: P = OrientedMap(fp="(0)(1)(~0,~1)")
+            sage: P.num_vertices(), P.num_faces()
+            (1, 3)
+            sage: w0 = [0, 3]
+            sage: w1 = [0, 2, 0, 0, 2]
+            sage: w2 = [0, 2, 1, 2]
+            sage: P.geometric_intersection(w0, punctured_faces=True)
+            1
+            sage: P.geometric_intersection([w0], [w2], punctured_faces=True)
+            2
+            sage: P.geometric_intersection([(w0, 1), (w1, 3)], [(w2, 2)], punctured_faces=True)
+            28
+
+        The self-intersection against the intersection with itself::
+
+            sage: P.geometric_intersection(w1, punctured_faces=True)
+            2
+            sage: P.geometric_intersection(w1, w1, punctured_faces=True)
+            4
+
+        .. SEEALSO::
+
+            Each call builds a new
+            :class:`~combisurf.geometric_intersection.GeometricIntersectionPairing`,
+            which computes a reduced map. To compute many intersection numbers on
+            the same map, build the pairing once and call it instead, and to
+            compute all the intersection numbers among a fixed list of curves use
+            :meth:`~combisurf.geometric_intersection.GeometricIntersectionPairing.intersection_matrix`.
+        """
+        from combisurf.geometric_intersection import GeometricIntersectionPairing
+        return GeometricIntersectionPairing(self, punctured_faces)(u, v)
+
+    def geometric_intersection_matrix(self, wlist, punctured_faces=False):
+        r"""
+        Return the ``GeometricIntersectionMatrix`` of ``wlist``.
+
+        The :class:`~combisurf.geometric_intersection.GeometricIntersectionMatrix` is a
+        lazy object that can be queried to answer pairwise intersections among the curves
+        represented by the walks in ``wlist``. It is much faster than repeated calls
+        to :meth:`geometric_intersection`.
+
+        EXAMPLES::
+
+            sage: from combisurf import OrientedMap
+            sage: from combisurf.lyndon_word_family import cyclically_reduced_lyndon_words
+            sage: torus = OrientedMap(fp="(0,1,~0,~1)")
+            sage: I = torus.geometric_intersection_matrix(cyclically_reduced_lyndon_words(2, 1, 4, up_to_inverse=True), punctured_faces=True)
+            sage: I
+            GeometricIntersectionMatrix of 8 curves on OrientedMap("(0,1,~0,~1)", "(0,1,~0,~1)")
+            sage: print(I.row(3))
+            [1, 1, 2, 0, 3, 1, 3, 1]
+            sage: print(I.matrix())
+            [0 1 1 1 1 1 2 2]
+            [1 0 1 1 2 2 1 1]
+            [1 1 0 2 1 3 1 3]
+            [1 1 2 0 3 1 3 1]
+            [1 2 1 3 0 4 3 5]
+            [1 2 3 1 4 0 5 3]
+            [2 1 1 3 3 5 0 4]
+            [2 1 3 1 5 3 4 0]
+        """
+        from combisurf.geometric_intersection import GeometricIntersectionPairing
+        return GeometricIntersectionPairing(self, punctured_faces).matrix(wlist)
+
     #############
     # Mutations #
     #############
