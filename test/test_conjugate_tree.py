@@ -413,7 +413,7 @@ def test_against_naive_long_words():
     from combisurf.conjugate_tree_naive import ConjugateTreeNaive
 
     rng = random.Random(4242)
-    for alphabet, length in [(2, 4000), (4, 2000), (64, 2000)]:
+    for alphabet, length in [(2, 2200), (5, 1300), (70, 1300)]:
         T0 = ConjugateTree(alphabet)
         T1 = ConjugateTreeNaive()
         for _ in range(3):

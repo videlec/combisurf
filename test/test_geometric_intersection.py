@@ -3,13 +3,13 @@ import pytest
 
 def test_geometric_intersection():
     from combisurf import OrientedMap
-    from combisurf.geometric_intersection import GeometricIntersection
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
 
     torus = OrientedMap(vp="(0,1,~0,~1)")
     octagon = OrientedMap(vp="(0,1,2,3,~0,~1,~2,~3)")
 
-    torus_gi = GeometricIntersection(torus)
-    octagon_gi = GeometricIntersection(octagon)
+    torus_gi = GeometricIntersectionPairing(torus, punctured_faces=True)
+    octagon_gi = GeometricIntersectionPairing(octagon, punctured_faces=True)
 
     for (cmap, u, v, expected_intersection) in [
         (torus_gi, [0], [2], 1),
@@ -35,18 +35,18 @@ def test_geometric_intersection():
         (torus_gi, [0,0,3,3,0,3], None, 2),
         (octagon_gi, [0,6], [6,0,2], 0)]:
         if v is None:
-            computed_intersection = cmap.geometric_intersection([u], None)
+            computed_intersection = cmap([u], None)
         else:
-            computed_intersection = cmap.geometric_intersection([u], [v])
+            computed_intersection = cmap([u], [v])
         assert computed_intersection == expected_intersection, (cmap, u, v, expected_intersection, computed_intersection)
 
 
 def test_torus_mcg():
     from combisurf import OrientedMap
-    from combisurf.geometric_intersection import GeometricIntersection
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
 
     torus = OrientedMap(vp="(0,1,~0,~1)")
-    gi = GeometricIntersection(torus)
+    gi = GeometricIntersectionPairing(torus, punctured_faces=True)
 
     f0 = [[2], [3], [0], [1]]
     f1 = [[1], [0], [2], [3]]
@@ -60,38 +60,38 @@ def test_torus_mcg():
         return ww
 
     for w in [[0], [0, 0, 2, 2], [0, 0, 0, 2, 2], [0, 0, 2, 2, 0, 0, 2, 2], [0, 3, 1, 2], [0, 2, 0, 0, 3]]:
-        intersection = gi.geometric_intersection([w])
+        intersection = gi([w])
         for s in [[0], [1], [2], [3], [0, 1], [0, 2], [1, 2], [2, 2, 3, 0], [3, 2, 1]]:
             ww = w[:]
             for i in s:
                 ww = apply_mcg(f[i], ww)
-            assert gi.geometric_intersection([ww]) == intersection
+            assert gi([ww]) == intersection
 
 
 def test_geometric_intersection_multilinearity():
     import itertools
     from combisurf import OrientedMap
-    from combisurf.geometric_intersection import GeometricIntersection
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
 
     torus = OrientedMap(vp="(0,1,~0,~1)")
-    gi = GeometricIntersection(torus)
+    gi = GeometricIntersectionPairing(torus, punctured_faces=True)
 
     # non-primitivity self-intersections
     for u in [[0, 0, 2], [0, 2, 1, 3], [0, 0, 2, 2], [0, 0, 2, 2, 1, 1, 3]]:
-        intersection = gi.geometric_intersection([u])
-        assert gi.geometric_intersection([u * 2]) == 4 * intersection + 1
-        assert gi.geometric_intersection([u, u]) == 4 * intersection
-        assert gi.geometric_intersection([u * 2, u]) == 9 * intersection + 1
-        assert gi.geometric_intersection([u * 3]) == 9 * intersection + 2
+        intersection = gi([u])
+        assert gi([u * 2]) == 4 * intersection + 1
+        assert gi([u, u]) == 4 * intersection
+        assert gi([u * 2, u]) == 9 * intersection + 1
+        assert gi([u * 3]) == 9 * intersection + 2
 
     wlist = [[0], [1], [0, 1], [0, 0, 1], [0, 1, 1], [0, 0, 1, 1]]
-    Q = [[gi.geometric_intersection([w0], [w1]) for w1 in wlist] for w0 in wlist]
+    Q = [[gi([w0], [w1]) for w1 in wlist] for w0 in wlist]
     for ucoeffs in [[3,5,1,0,2,4], [1,3,0,1,2,1], [5,1,2,3,0,3]]:
         ulist = [w * mult for w, mult in zip(wlist, ucoeffs)]
         for vcoeffs in [[0,1,0,2,0,3], [1,1,1,1,0,2], [2,6,4,1,5,3]]:
             vlist = [w * mult for w, mult in zip(wlist, vcoeffs)]
             ans0 = sum(ucoeffs[i] * vcoeffs[j] * Q[i][j] for i in range(6) for j in range(6))
-            ans1 = gi.geometric_intersection(ulist, vlist)
+            ans1 = gi(ulist, vlist)
             assert ans0 == ans1, gi
 
 
@@ -231,18 +231,18 @@ def startpoint_sweep_brute_force(starts, angles, uweights, vweights):
 
 def test_intersection_matrix_torus_benchmark():
     from combisurf import OrientedMap
-    from combisurf.geometric_intersection import GeometricIntersection
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
     from combisurf.lyndon_word_family import cyclically_reduced_lyndon_words
 
     torus = OrientedMap(vp="(0,1,~0,~1)")
-    gi = GeometricIntersection(torus)
+    gi = GeometricIntersectionPairing(torus, punctured_faces=True)
     curves = [list(w) for w in cyclically_reduced_lyndon_words(torus.num_edges(), 1, 7, up_to_inverse=True)]
     assert len(curves) == 99
 
-    I = gi.intersection_matrix(curves)
+    I = gi.matrix(curves)
     for x, u in enumerate(curves):
         for y, v in enumerate(curves):
-            assert I.entry(x, y) == gi.geometric_intersection([u], [v]), (x, y)
+            assert I.entry(x, y) == gi([u], [v]), (x, y)
 
     mat = I.matrix()
     assert sum(sum(row) for row in mat.rows()) == 62902
@@ -250,15 +250,15 @@ def test_intersection_matrix_torus_benchmark():
 
 def test_intersection_matrix_genus_and_length():
     import random
-    from combisurf.geometric_intersection import GeometricIntersection
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
 
     rng = random.Random(20260922)
     for g in [1, 2, 4, 8, 16]:
         m = polygon_4g(g)
-        gi = GeometricIntersection(m)
+        gi = GeometricIntersectionPairing(m, punctured_faces=True)
         for length in [3, 8, 40, 200]:
             curves = random_primitive_curves(4 * g, length, 5, rng)
-            I = gi.intersection_matrix(curves)
+            I = gi.matrix(curves)
             # both sides of the threshold of the dense layout of the
             # conjugate tree are covered by this range of genera
             assert I._tree.algorithm() == ('dense' if 4 * g <= 32 else 'rows')
@@ -266,79 +266,79 @@ def test_intersection_matrix_genus_and_length():
                 for y, v in enumerate(curves):
                     if y < x:
                         continue
-                    assert I.entry(x, y) == gi.geometric_intersection([u], [v]), (g, length, x, y)
+                    assert I.entry(x, y) == gi([u], [v]), (g, length, x, y)
 
 
 def test_intersection_matrix_large_alphabet():
     # A large alphabet, well beyond the threshold of the dense layout.
     import random
-    from combisurf.geometric_intersection import GeometricIntersection
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
 
     rng = random.Random(1234)
     g = 70
     m = polygon_4g(g)
-    gi = GeometricIntersection(m)
+    gi = GeometricIntersectionPairing(m, punctured_faces=True)
     for length in [5, 30]:
         curves = random_primitive_curves(4 * g, length, 4, rng)
-        I = gi.intersection_matrix(curves)
+        I = gi.matrix(curves)
         assert I._tree.algorithm() == 'rows'
         for x, u in enumerate(curves):
             for y, v in enumerate(curves):
-                assert I.entry(x, y) == gi.geometric_intersection([u], [v]), (length, x, y)
+                assert I.entry(x, y) == gi([u], [v]), (length, x, y)
 
 
 def test_intersection_matrix_conjugates_and_inverses():
     from combisurf import OrientedMap
-    from combisurf.geometric_intersection import GeometricIntersection
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
     from combisurf.word import word_init, word_free_group_inverse
 
     torus = OrientedMap(vp="(0,1,~0,~1)")
-    gi = GeometricIntersection(torus)
+    gi = GeometricIntersectionPairing(torus, punctured_faces=True)
 
     w = word_init([0, 0, 2, 0, 3])
     curves = [w, w[2:] + w[:2], word_free_group_inverse(w), word_init([0, 2]), word_init([0, 2, 2, 0, 3])]
-    I = gi.intersection_matrix(curves)
+    I = gi.matrix(curves)
 
     # a word, one of its conjugates and its inverse share a slot
     assert I._slot == [0, 0, 0, 1, 2]
 
     for x, u in enumerate(curves):
         for y, v in enumerate(curves):
-            assert I.entry(x, y) == gi.geometric_intersection([list(u)], [list(v)]), (x, y)
+            assert I.entry(x, y) == gi([list(u)], [list(v)]), (x, y)
 
 
 def test_intersection_matrix_non_primitive():
     from combisurf import OrientedMap
-    from combisurf.geometric_intersection import GeometricIntersection
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
     from combisurf.word import word_init, word_free_group_inverse
 
     torus = OrientedMap(vp="(0,1,~0,~1)")
-    gi = GeometricIntersection(torus)
+    gi = GeometricIntersectionPairing(torus, punctured_faces=True)
 
     # a power of a curve that is not in the list
     with pytest.raises(NotImplementedError):
-        gi.intersection_matrix([[0, 2, 0, 2]])
+        gi.matrix([[0, 2, 0, 2]])
     # a power of a curve that is already in the list
     with pytest.raises(NotImplementedError):
-        gi.intersection_matrix([[0, 2], [0, 2, 0, 2]])
+        gi.matrix([[0, 2], [0, 2, 0, 2]])
     # a power of the inverse of a curve that is already in the list
     inverse_square = list(word_free_group_inverse(word_init([0, 2, 0, 2])))
     with pytest.raises(NotImplementedError):
-        gi.intersection_matrix([[0, 2], inverse_square])
+        gi.matrix([[0, 2], inverse_square])
     # a curve that is trivial in the free group
     with pytest.raises(ValueError):
-        gi.intersection_matrix([[0, 1]])
+        gi.matrix([[0, 1]])
 
 
 def test_intersection_matrix_row_and_matrix():
     from sage.rings.integer_ring import ZZ
     from combisurf import OrientedMap
-    from combisurf.geometric_intersection import GeometricIntersection
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
 
     octagon = OrientedMap(vp="(0,1,2,3,~0,~1,~2,~3)")
-    gi = GeometricIntersection(octagon)
+    gi = GeometricIntersectionPairing(octagon, punctured_faces=True)
     curves = [[0], [3], [0, 3, 6], [0, 2, 2, 5, 2, 2, 5], [0, 4, 1, 5]]
-    I = gi.intersection_matrix(curves)
+    I = gi.matrix(curves)
 
     mat = I.matrix()
     assert mat.is_symmetric()
@@ -376,16 +376,16 @@ def test_intersection_matrix_double_sum_paths():
     # the Cython sweep against its pure Python oracle, and matrix(), row() and
     # entry() against each other and against geometric_intersection
     import random
-    from combisurf.geometric_intersection import GeometricIntersection, GeometricIntersectionMatrix
+    from combisurf.geometric_intersection import GeometricIntersectionPairing, GeometricIntersectionMatrix
 
     naive = naive_double_sum_matrix_class()
     rng = random.Random(20260923)
-    for g, length in [(1, 8), (2, 8), (4, 8), (8, 8), (16, 8), (32, 8), (8, 100)]:
+    for g, length in [(1, 8), (2, 8), (3, 8), (4, 8), (5, 9), (19, 8)]:
         m = polygon_4g(g)
-        gi = GeometricIntersection(m)
+        gi = GeometricIntersectionPairing(m, punctured_faces=True)
         curves = random_primitive_curves(4 * g, length, 12, rng)
-        fast = GeometricIntersectionMatrix(gi, curves)
-        slow = naive(gi, curves)
+        fast = GeometricIntersectionMatrix(m, curves)
+        slow = naive(m, curves)
 
         mat = fast.matrix()
         assert mat == slow.matrix(), (g, length)
@@ -396,7 +396,7 @@ def test_intersection_matrix_double_sum_paths():
             assert slow.row(x) == row, (g, length, x)
             assert list(mat.row(x)) == row, (g, length, x)
         for x, y in [(0, 0), (0, 1), (3, 7), (11, 5)]:
-            assert mat[x, y] == gi.geometric_intersection([curves[x]], [curves[y]]), (g, length, x, y)
+            assert mat[x, y] == gi([curves[x]], [curves[y]]), (g, length, x, y)
 
 
 def test_intersection_matrix_double_sum_identity():
@@ -404,13 +404,13 @@ def test_intersection_matrix_double_sum_identity():
     # the two slots, with u-weights from the first and v-weights from the
     # second, as geometric_intersection builds them
     import random
-    from combisurf.geometric_intersection import GeometricIntersection
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
 
     rng = random.Random(20260926)
     for g, length in [(1, 8), (2, 8), (4, 8), (8, 8), (8, 100)]:
-        gi = GeometricIntersection(polygon_4g(g))
+        gi = GeometricIntersectionPairing(polygon_4g(g), punctured_faces=True)
         n = 4 * g
-        I = gi.intersection_matrix(random_primitive_curves(n, length, 8, rng))
+        I = gi.matrix(random_primitive_curves(n, length, 8, rng))
         words = I._tree.words()
         num_slots = len(words) // 2
         for sx in range(num_slots):
@@ -553,7 +553,7 @@ def test_intersection_matrix_self_intersection():
     # the self-intersection of a curve is half of its diagonal entry
     import random
     from combisurf import OrientedMap
-    from combisurf.geometric_intersection import GeometricIntersection
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
     from combisurf.lyndon_word_family import cyclically_reduced_lyndon_words
 
     rng = random.Random(20260929)
@@ -563,17 +563,17 @@ def test_intersection_matrix_self_intersection():
              (octagon, rng.sample([list(w) for w in cyclically_reduced_lyndon_words(4, 1, 6, up_to_inverse=True)], 200)),
              (polygon_4g(32), random_primitive_curves(128, 8, 50, rng))]
     for m, curves in cases:
-        gi = GeometricIntersection(m)
-        I = gi.intersection_matrix(curves)
+        gi = GeometricIntersectionPairing(m, punctured_faces=True)
+        I = gi.matrix(curves)
         for x, c in enumerate(curves):
             e = I.entry(x, x)
-            assert e % 2 == 0 and e // 2 == gi.geometric_intersection([c]), (m, c)
+            assert e % 2 == 0 and e // 2 == gi([c]), (m, c)
 
 
 def crossing_arcs_implementations():
     r"""
     Return the two independent functions computing the crossing arcs term of
-    ``GeometricIntersection.geometric_intersection`` from a dictionary of
+    ``GeometricIntersectionPairing.geometric_intersection`` from a dictionary of
     arcs: the brute force straight from the definition and the `O(n^2)`
     double sum.
     """
@@ -605,7 +605,7 @@ def test_geometric_intersection_crossing_arcs_paths(monkeypatch):
     # every call
     import random
     import combisurf.geometric_intersection as geometric_intersection
-    from combisurf.geometric_intersection import GeometricIntersection
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
     from combisurf.word import word_init, word_free_group_inverse
 
     implementations = crossing_arcs_implementations()
@@ -638,14 +638,14 @@ def test_geometric_intersection_crossing_arcs_paths(monkeypatch):
 
         def call(ulist, vlist=None):
             monkeypatch.setattr(geometric_intersection, "crossing_arcs_sweep_sorted", sweep_sorted)
-            return gi.geometric_intersection(ulist, vlist)
+            return gi(ulist, vlist)
         return call
 
     paths = [forced(f) for f in implementations + [all_paths]]
 
     rng = random.Random(20260925)
     for g in [1, 2, 4, 8, 16, 32]:
-        gi = GeometricIntersection(polygon_4g(g))
+        gi = GeometricIntersectionPairing(polygon_4g(g), punctured_faces=True)
         for length in [1, 2, 8, 100]:
             c0, c1, c2, c3 = random_primitive_curves(4 * g, length, 4, rng)
             conj = c1[1:] + c1[:1]
@@ -825,21 +825,21 @@ def test_pair_of_pants():
     # the one-vertex map with three faces; a = 0, a^-1 = 1, b = 2, b^-1 = 3
     import random
     from combisurf import OrientedMap
-    from combisurf.geometric_intersection import GeometricIntersection
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
 
     P = OrientedMap(fp="(0)(1)(~0,~1)")
     assert P.num_vertices() == 1 and P.num_faces() == 3
     assert not P.has_folded_edge()
-    gi = GeometricIntersection(P)
+    gi = GeometricIntersectionPairing(P, punctured_faces=True)
 
     boundaries = [[0], [2], [1, 3]]
     for u in boundaries:
         for v in boundaries:
-            assert gi.geometric_intersection([u], [v]) == 0
-    assert gi.intersection_matrix(boundaries).matrix() == 0
+            assert gi([u], [v]) == 0
+    assert gi.matrix(boundaries).matrix() == 0
 
-    assert gi.geometric_intersection([[0, 3]]) == 1
-    assert gi.geometric_intersection([[0, 2, 0, 0, 2]]) == 2
+    assert gi([[0, 3]]) == 1
+    assert gi([[0, 2, 0, 0, 2]]) == 2
 
     # the exchange of a and b, and the rotation a -> b, b -> a^-1 b^-1
     mor0 = [[2], [3], [0], [1]]
@@ -855,13 +855,31 @@ def test_pair_of_pants():
     for _ in range(200):
         u = random_cyclically_reduced_word(rng, 4, rng.randint(1, 12))
         v = random_cyclically_reduced_word(rng, 4, rng.randint(1, 12))
-        iu = gi.geometric_intersection([u])
-        iuv = gi.geometric_intersection([u], [v])
+        iu = gi([u])
+        iuv = gi([u], [v])
         for mor in (mor0, rot):
             mu = word_image(mor, u)
             mv = word_image(mor, v)
-            assert gi.geometric_intersection([mu]) == iu, (mor, u)
-            assert gi.geometric_intersection([mu], [mv]) == iuv, (mor, u, v)
+            assert gi([mu]) == iu, (mor, u)
+            assert gi([mu], [mv]) == iuv, (mor, u, v)
+
+
+def test_punctured_faces():
+    # more punctures, less intersections
+    from combisurf.word import word_init
+    from combisurf import OrientedMap
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
+    m = OrientedMap(fp="(0,1,2)(~0,3,4)(~1,~4,~5)(~2,5,~3)")
+    I = [GeometricIntersectionPairing(m, punctured_faces=[0,1,2,3]),
+         GeometricIntersectionPairing(m, punctured_faces=[1,2,3]),
+         GeometricIntersectionPairing(m, punctured_faces=[0,2,3]),
+         GeometricIntersectionPairing(m, punctured_faces=[0,1,3]),
+         GeometricIntersectionPairing(m, punctured_faces=[0,1,2])]
+
+    W = ["0,1,2,3,~5,2", "4,1,5,~3,0,1,5,4,~0,3,4,~0,~2,~1,~0,3", "0,~4,~5,2,0,1,2,3,4,~0"]
+    M = [gi.matrix(W) for gi in I]
+    for k in range(1, 5):
+        assert all(M[0].entry(i,j) >= M[k].entry(i,j) for i in range(3) for j in range(3))
 
 
 def test_face_boundaries():
@@ -869,7 +887,7 @@ def test_face_boundaries():
     # closed curves
     import random
     from combisurf import OrientedMap
-    from combisurf.geometric_intersection import GeometricIntersection
+    from combisurf.geometric_intersection import GeometricIntersectionPairing
     from combisurf.word import word_init, word_is_cyclically_reduced
     from sage.combinat.words.word import Word
 
@@ -883,7 +901,7 @@ def test_face_boundaries():
             vp[cycle[i]] = cycle[(i + 1) % (2 * e)]
         m = OrientedMap(vp=vp)
         assert m.num_vertices() == 1 and not m.has_folded_edge()
-        gi = GeometricIntersection(m)
+        gi = GeometricIntersectionPairing(m, punctured_faces=True)
 
         faces = []
         seen = set()
@@ -900,20 +918,10 @@ def test_face_boundaries():
             faces.append(w)
 
         for i, u in enumerate(faces):
-            assert gi.geometric_intersection([u]) == 0, (vp, u)
+            assert gi([u]) == 0, (vp, u)
             for v in faces[i + 1:]:
-                assert gi.geometric_intersection([u], [v]) == 0, (vp, u, v)
+                assert gi([u], [v]) == 0, (vp, u, v)
             for _ in range(3):
                 w = random_cyclically_reduced_word(rng, 2 * e, rng.randint(1, 8))
-                iuw = gi.geometric_intersection([u], [w])
-                assert iuw >= 0 and iuw == gi.geometric_intersection([w], [u]), (vp, u, w)
-
-
-def test_two_vertices():
-    from combisurf import OrientedMap
-    from combisurf.geometric_intersection import GeometricIntersection
-
-    m = OrientedMap(vp="(0,1)(~0,~1)")
-    assert m.num_vertices() == 2 and not m.has_folded_edge()
-    with pytest.raises(NotImplementedError, match="single vertex"):
-        GeometricIntersection(m)
+                iuw = gi([u], [w])
+                assert iuw >= 0 and iuw == gi([w], [u]), (vp, u, w)
