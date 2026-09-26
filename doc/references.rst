@@ -98,7 +98,7 @@ BFS-depth weighting scheme
 (:func:`~combisurf.layout.tutte_barycentric.bfs_depth_weights`,
 :func:`~combisurf.layout.tutte_barycentric.bfs_depth_layout`).
 
-.. _fenwick1994:
+.. _fenwick-1994:
 
 Fenwick (1994)
 --------------
@@ -125,7 +125,7 @@ counting the crossing chords of a circle is the easy case of counting
 segment intersections, because the cyclic order of the endpoints already
 gives the sweep order.
 
-.. _despre-lazarus2019:
+.. _despre-lazarus-2019:
 
 Despré & Lazarus (2019)
 -----------------------
@@ -162,7 +162,7 @@ Source of the simplicity criterion checked in the doctests of
 a primitive positive word gives a simple curve exactly when its
 Burrows-Wheeler transform is non-increasing.
 
-.. _ukkonen1995:
+.. _ukkonen-1995:
 
 Ukkonen (1995)
 --------------
@@ -173,3 +173,19 @@ E. Ukkonen. *On-line construction of suffix trees*. Algorithmica,
 Source of the construction of :class:`~combisurf.conjugate_tree.ConjugateTree`
 (the active point, ``canonize`` and ``test_and_split``), here applied to
 words read cyclically.
+
+.. _cohen-lustig-1987:
+
+Cohen Lustig (1987)
+-------------------
+
+M. Cohen, M. Lustig. *Paths of geodesics and geometric intersection numbers. I*.
+Combinatorial group theory and topology, Sel. Pap. Conf., Alta/Utah 1984, Ann. Math. Stud. (111):479-500 1987.
+
+.. _dubois-2024:
+
+Dubois (2024)
+-------------
+
+L. Dubois. *Making Multicurves Cross Minimally on Surfaces*
+ESA 2024: 50:1-50:15
